@@ -35,12 +35,9 @@ body{
 /* ───── nav ───── */
 nav{
   position:absolute;top:0;left:0;right:0;z-index:100;
-  display:flex;justify-content:space-between;align-items:center;
+  display:flex;justify-content:flex-end;align-items:center;
   padding:1.2rem 2rem;
   mix-blend-mode:difference;
-}
-nav .mark{
-  font-weight:700;color:#f3eede;font-size:1rem;letter-spacing:.4em;text-decoration:none;
 }
 .nav-right{display:flex;align-items:center;gap:2rem}
 nav ul{display:flex;gap:2rem;list-style:none}
@@ -358,7 +355,6 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
 <body data-lang="ja">
 
 <nav aria-label="メイン">
-  <a class="mark" href="#top">名取道治</a>
   <div class="nav-right">
     <ul>
       <li><a href="#profile">Profile</a></li>
