@@ -320,9 +320,13 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
   font-size:.72rem;letter-spacing:.2em;color:var(--sumi-soft);
 }
 .links-row{
-  display:flex;justify-content:center;flex-wrap:wrap;
+  display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:baseline;
   gap:clamp(1.6rem,5vw,3.4rem);margin-top:.4rem;
 }
+.links-row a:nth-child(1){justify-self:end}
+.links-row a:nth-child(2){justify-self:center}
+.links-row a:nth-child(3){justify-self:start}
 .links-row a{
   text-decoration:none;color:var(--sumi);
   font-family:'Zen Kaku Gothic New',sans-serif;
