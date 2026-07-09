@@ -312,7 +312,6 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
 .c-form input:focus,.c-form textarea:focus{
   outline:none;border-color:var(--icho);
 }
-.c-form input::placeholder,.c-form textarea::placeholder{color:rgba(90,86,76,.45)}
 .c-submit{
   display:inline-block;
   font-family:'Zen Kaku Gothic New',sans-serif;
@@ -1060,24 +1059,26 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
     <p class="eyebrow">CONTACT</p>
     <p class="contact-lead" data-i18n="contactLead">執筆・寄稿・取材のご依頼、その他のお問い合わせは、下記のフォームよりご連絡ください。</p>
 
-    <form class="c-form" id="contact-form" novalidate>
+    <form class="c-form" id="contact-form" action="https://formsubmit.co/michihari.natori.note@gmail.com" method="POST">
       <label for="cf-name" data-i18n="lblName">お名前</label>
-      <input type="text" id="cf-name" name="name" autocomplete="name" required data-i18n-ph="phName" placeholder="山田 太郎">
+      <input type="text" id="cf-name" name="name" autocomplete="name" required>
 
       <label for="cf-email" data-i18n="lblEmail">メールアドレス</label>
-      <input type="email" id="cf-email" name="email" autocomplete="email" required placeholder="you@example.com">
+      <input type="email" id="cf-email" name="email" autocomplete="email" required>
 
       <label for="cf-subject" data-i18n="lblSubject">件名</label>
-      <input type="text" id="cf-subject" name="subject" required data-i18n-ph="phSubject" placeholder="ご依頼・お問い合わせの件名">
+      <input type="text" id="cf-subject" name="_subject" required>
 
       <label for="cf-message" data-i18n="lblMessage">本文</label>
-      <textarea id="cf-message" name="message" required data-i18n-ph="phMessage" placeholder="ご用件をご記入ください"></textarea>
+      <textarea id="cf-message" name="message" required></textarea>
 
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_next" id="cf-next" value="">
       <button type="submit" class="c-submit" data-i18n="btnSend">送信する</button>
       <p id="form-status" class="c-alt" aria-live="polite"></p>
     </form>
 
-    <p class="c-alt" data-i18n="mailNote">送信内容は、直接お届けされます。</p>
 
     <div class="follow-block">
       <p class="eyebrow">FOLLOW</p>
@@ -1130,9 +1131,7 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       press7: "『現代人 創刊号』刊行",
       contactLead: "執筆・寄稿・取材のご依頼、その他のお問い合わせは、下記のフォームよりご連絡ください。",
       lblName: "お名前", lblEmail: "メールアドレス", lblSubject: "件名", lblMessage: "本文",
-      phName: "山田 太郎", phSubject: "ご依頼・お問い合わせの件名", phMessage: "ご用件をご記入ください",
       btnSend: "送信する",
-      mailNote: "送信内容は、直接お届けされます。",
       mailSubjectPrefix: "【お問い合わせ】",
       mailName: "お名前", mailAddr: "メールアドレス"
     },
@@ -1166,9 +1165,7 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       press7: "Inaugural issue of Gendaijin published",
       contactLead: "For writing commissions, contributions, interviews, or any other inquiries, please use the form below.",
       lblName: "Name", lblEmail: "Email", lblSubject: "Subject", lblMessage: "Message",
-      phName: "Your name", phSubject: "Subject of your inquiry", phMessage: "Write your message here",
       btnSend: "Send",
-      mailNote: "Your message will be delivered directly.",
       mailSubjectPrefix: "[Inquiry] ",
       mailName: "Name", mailAddr: "Email"
     },
@@ -1202,9 +1199,7 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       press7: "Parution du premier numéro de Gendaijin",
       contactLead: "Pour toute demande d'écriture, de contribution, d'interview ou autre, veuillez utiliser le formulaire ci-dessous.",
       lblName: "Nom", lblEmail: "Adresse e-mail", lblSubject: "Objet", lblMessage: "Message",
-      phName: "Votre nom", phSubject: "Objet de votre demande", phMessage: "Rédigez votre message ici",
       btnSend: "Envoyer",
-      mailNote: "Votre message sera transmis directement.",
       mailSubjectPrefix: "[Contact] ",
       mailName: "Nom", mailAddr: "E-mail"
     }
@@ -1266,63 +1261,21 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
   })();
 
   /* ── お問い合わせフォーム ──
-     FormSubmit (formsubmit.co) 経由で michihari.natori.note@gmail.com へ直接送信。
-     ※初回送信時に一度だけ、Gmail宛てに届く確認メールの「Activate」を押すと有効化されます。
-     通信に失敗した場合は、従来どおりメールアプリを起動する方式に自動で切り替わります。 */
-  const CONTACT_EMAIL = "michihari.natori.note@gmail.com";
-  const FORM_ENDPOINT = "https://formsubmit.co/ajax/" + CONTACT_EMAIL;
-
-  const form = document.getElementById("contact-form");
-  const submitBtn = form.querySelector(".c-submit");
-  const statusEl = document.getElementById("form-status");
-
-  const SEND_MSG = {
-    ja: {sending:"送信しています……", ok:"送信しました。お問い合わせありがとうございました。", ng:"送信に失敗したため、メールアプリを起動します。"},
-    en: {sending:"Sending…", ok:"Your message has been sent. Thank you.", ng:"Sending failed — opening your email application instead."},
-    fr: {sending:"Envoi en cours…", ok:"Votre message a bien été envoyé. Merci.", ng:"Échec de l'envoi — ouverture de votre application de messagerie."}
-  };
-
-  function mailtoFallback(name,email,subject,message){
-    const t = I18N[currentLang];
-    const body = t.mailName + ": " + name + "\n" + t.mailAddr + ": " + email + "\n\n" + message;
-    window.location.href = "mailto:" + CONTACT_EMAIL
-      + "?subject=" + encodeURIComponent(t.mailSubjectPrefix + subject)
-      + "&body=" + encodeURIComponent(body);
+     FormSubmit へフォームを直接POSTし、michihari.natori.note@gmail.com に届く方式。
+     ※初回送信後に一度だけ、Gmailに届く確認メールの「Activate Form」を押すと有効化されます。
+     送信が完了するとこのページに戻り、お礼のメッセージが表示されます。 */
+  var nextField = document.getElementById("cf-next");
+  if(nextField){
+    nextField.value = location.origin + location.pathname + "?sent=1#contact";
   }
-
-  form.addEventListener("submit", function(e){
-    e.preventDefault();
-    if(!form.reportValidity()) return;
-    const msg = SEND_MSG[currentLang];
-    const name = document.getElementById("cf-name").value.trim();
-    const email = document.getElementById("cf-email").value.trim();
-    const subject = document.getElementById("cf-subject").value.trim();
-    const message = document.getElementById("cf-message").value.trim();
-
-    submitBtn.disabled = true;
-    statusEl.textContent = msg.sending;
-
-    fetch(FORM_ENDPOINT, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Accept":"application/json"},
-      body: JSON.stringify({
-        name: name, email: email, message: message,
-        _subject: I18N[currentLang].mailSubjectPrefix + subject,
-        _template: "table", _captcha: "false"
-      })
-    })
-    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-    .then(function(){
-      statusEl.textContent = msg.ok;
-      form.reset();
-      submitBtn.disabled = false;
-    })
-    .catch(function(){
-      statusEl.textContent = msg.ng;
-      submitBtn.disabled = false;
-      mailtoFallback(name,email,subject,message);
-    });
-  });
+  if(location.search.indexOf("sent=1") !== -1){
+    var st = document.getElementById("form-status");
+    var thanks = {ja:"送信しました。お問い合わせありがとうございました。",
+                  en:"Your message has been sent. Thank you.",
+                  fr:"Votre message a bien été envoyé. Merci."};
+    if(st) st.textContent = thanks[document.body.dataset.lang] || thanks.ja;
+    try{ history.replaceState(null, "", location.pathname + "#contact"); }catch(e){}
+  }
 })();
 </script>
 </body>
