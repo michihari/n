@@ -1059,7 +1059,7 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
     <p class="eyebrow">CONTACT</p>
     <p class="contact-lead" data-i18n="contactLead">執筆・寄稿・取材のご依頼、その他のお問い合わせは、下記のフォームよりご連絡ください。</p>
 
-    <form class="c-form" id="contact-form" action="https://formsubmit.co/michihari.natori.note@gmail.com" method="POST">
+    <form class="c-form" id="contact-form" action="https://formspree.io/f/xdarqady" method="POST">
       <label for="cf-name" data-i18n="lblName">お名前</label>
       <input type="text" id="cf-name" name="name" autocomplete="name" required>
 
@@ -1072,7 +1072,6 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       <label for="cf-message" data-i18n="lblMessage">本文</label>
       <textarea id="cf-message" name="message" required></textarea>
 
-      <input type="hidden" name="_template" value="table">
       <button type="submit" class="c-submit" data-i18n="btnSend">送信する</button>
     </form>
 
@@ -1258,10 +1257,9 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
   })();
 
   /* ── お問い合わせフォーム ──
-     ブラウザ標準のフォーム送信のみで FormSubmit へ直接POSTする最小構成。
-     JavaScriptには一切依存しない。送信後はFormSubmit側の完了画面が表示される。
-     ※初回のみ：送信後に michihari.natori.note@gmail.com へ届く確認メールの
-       「Activate Form」を押すと有効化され、以降の内容が届くようになります。 */
+     Formspree (https://formspree.io/f/xdarqady) へブラウザ標準のフォーム送信で直接POST。
+     登録済みの宛先（michihari.natori.note@gmail.com）に届き、Formspreeの管理画面でも確認できる。
+     JavaScriptには依存しない。件名は _subject、返信先は email フィールドが自動で使われる。 */
 })();
 </script>
 </body>
