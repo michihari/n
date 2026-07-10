@@ -1072,11 +1072,8 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       <label for="cf-message" data-i18n="lblMessage">本文</label>
       <textarea id="cf-message" name="message" required></textarea>
 
-      <input type="hidden" name="_captcha" value="false">
       <input type="hidden" name="_template" value="table">
-      <input type="hidden" name="_next" id="cf-next" value="">
       <button type="submit" class="c-submit" data-i18n="btnSend">送信する</button>
-      <p id="form-status" class="c-alt" aria-live="polite"></p>
     </form>
 
 
@@ -1261,21 +1258,10 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
   })();
 
   /* ── お問い合わせフォーム ──
-     FormSubmit へフォームを直接POSTし、michihari.natori.note@gmail.com に届く方式。
-     ※初回送信後に一度だけ、Gmailに届く確認メールの「Activate Form」を押すと有効化されます。
-     送信が完了するとこのページに戻り、お礼のメッセージが表示されます。 */
-  var nextField = document.getElementById("cf-next");
-  if(nextField){
-    nextField.value = location.origin + location.pathname + "?sent=1#contact";
-  }
-  if(location.search.indexOf("sent=1") !== -1){
-    var st = document.getElementById("form-status");
-    var thanks = {ja:"送信しました。お問い合わせありがとうございました。",
-                  en:"Your message has been sent. Thank you.",
-                  fr:"Votre message a bien été envoyé. Merci."};
-    if(st) st.textContent = thanks[document.body.dataset.lang] || thanks.ja;
-    try{ history.replaceState(null, "", location.pathname + "#contact"); }catch(e){}
-  }
+     ブラウザ標準のフォーム送信のみで FormSubmit へ直接POSTする最小構成。
+     JavaScriptには一切依存しない。送信後はFormSubmit側の完了画面が表示される。
+     ※初回のみ：送信後に michihari.natori.note@gmail.com へ届く確認メールの
+       「Activate Form」を押すと有効化され、以降の内容が届くようになります。 */
 })();
 </script>
 </body>
