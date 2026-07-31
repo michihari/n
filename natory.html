@@ -36,7 +36,8 @@ main{max-width:760px;margin:0 auto;padding:4rem 1.5rem 6rem}
 .n-body{padding:.4rem 1.5rem 1.6rem;border-top:1px solid rgba(247,243,232,.16)}
 .n-body p{font-size:.95rem;text-align:justify;margin-top:1.2em;color:rgba(247,243,232,.88)}
 .n-src{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.7rem;letter-spacing:.12em;color:rgba(247,243,232,.5);margin-top:1.4em}
-.n-src a{color:rgba(247,243,232,.7)}
+.n-src a{color:rgba(247,243,232,.8);text-decoration:none;border-bottom:1px solid rgba(227,180,34,.5);padding-bottom:.15em}
+.n-src a:hover{color:var(--icho);border-color:var(--icho)}
 .back{display:inline-block;margin-bottom:2.6rem;font-family:'Zen Kaku Gothic New',sans-serif;
   font-size:.78rem;letter-spacing:.24em;color:var(--washi);text-decoration:none;
   border-bottom:1px solid rgba(247,243,232,.3);padding-bottom:.3rem;transition:border-color .3s}
@@ -66,7 +67,7 @@ footer{border-top:1px solid rgba(247,243,232,.14);padding:2.6rem;text-align:cent
       if(!list||!list.length){host.innerHTML='<p class="empty">まだ日記はありません。</p>';return;}
       host.innerHTML=list.map(function(e,i){
         var body=e.body.split(/\n\n+/).map(function(p){return "<p>"+esc(p)+"</p>";}).join("");
-        var src=(e.source&&e.source.title)?'<p class="n-src">応答した回：<a href="'+esc(e.source.link)+'" target="_blank" rel="noopener">'+esc(e.source.title)+'</a></p>':'';
+        var src=(e.source&&e.source.link&&/^https?:/.test(e.source.link))?'<p class="n-src">応答した回：<a href="'+esc(e.source.link)+'" target="_blank" rel="noopener">'+esc(e.source.title||e.source.link)+'</a></p>':'';
         return '<details class="natory-entry"'+(i===0?' open':'')+'>'
           +'<summary><span class="n-date">'+esc(e.date)+'</span>'
           +'<span class="n-title">'+esc(e.title)+'</span>'

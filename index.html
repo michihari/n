@@ -316,6 +316,17 @@ body:not([data-lang="ja"]) .press-card .cap{letter-spacing:.02em}
 .natory-entry[open] .n-mark::before{content:"−"}
 .n-body{padding:.4rem 1.5rem 1.6rem;border-top:1px solid rgba(247,243,232,.16)}
 .n-body p{font-size:.95rem;text-align:justify;margin-top:1.2em;color:rgba(247,243,232,.88)}
+.n-src{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  font-size:.72rem;letter-spacing:.12em;
+  color:rgba(247,243,232,.55);margin-top:1.8em;
+}
+.n-src a{
+  color:rgba(247,243,232,.8);text-decoration:none;
+  border-bottom:1px solid rgba(227,180,34,.5);padding-bottom:.15em;
+  transition:border-color .3s,color .3s;
+}
+.n-src a:hover{color:var(--icho);border-color:var(--icho)}
 .natory-links{margin-top:1.8rem}
 .natory-links a{
   font-family:'Zen Kaku Gothic New',sans-serif;
@@ -1338,12 +1349,17 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
         var host = document.getElementById("natory-latest");
         if(!host) return;
         var body = e.body.split(/\n\n+/).map(function(p){return "<p>"+esc(p)+"</p>";}).join("");
+        var src = "";
+        if(e.source && e.source.link && /^https?:/.test(e.source.link)){
+          src = '<p class="n-src">応答した回：<a href="'+esc(e.source.link)+'" target="_blank" rel="noopener">'
+              + esc(e.source.title || e.source.link) + '</a></p>';
+        }
         host.innerHTML =
           '<details class="natory-entry">'
           + '<summary><span class="n-date">'+esc(e.date)+'</span>'
           + '<span class="n-title">'+esc(e.title)+'</span>'
           + '<span class="n-mark" aria-hidden="true"></span></summary>'
-          + '<div class="n-body">'+body+'</div></details>';
+          + '<div class="n-body">'+body+src+'</div></details>';
       })
       .catch(function(){ /* 未生成のあいだは組み込みの初回日記を表示 */ });
   })();
