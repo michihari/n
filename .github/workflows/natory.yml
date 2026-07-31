@@ -1,0 +1,43 @@
+# NATORY — 応答日記の自動生成（人間の介入なし・完全無料）
+# 生成は無料。Secretsに GEMINI_API_KEY を登録すればGeminiを使い、
+# 未登録なら GitHub Models（GITHUB_TOKENのみ）で動く。
+# 毎朝 06:00 JST（前日21:00 UTC）に新しい回が出ていないか確認し、
+# 出ていればその朝だけ日記を書く。＝記事投稿の翌朝6時に応答が公開される。
+name: NATORY diary
+
+on:
+  schedule:
+    - cron: "0 21 * * *"     # 毎朝 JST 6:00 に点検
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  models: read        # GitHub Models（無料）を呼ぶための権限
+
+jobs:
+  write-diary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate NATORY entry
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python natory/generate.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name  "NATORY"
+          git config user.email "natory@users.noreply.github.com"
+          if ! git diff --quiet natory/entries.json; then
+            git add natory/entries.json
+            git commit -m "NATORY: 応答日記を追加"
+            git push
+          else
+            echo "変更なし"
+          fi
