@@ -32,7 +32,7 @@ RSS_URL = "https://note.com/michihari_natori/rss"
 ENTRIES = os.path.join(os.path.dirname(__file__), "entries.json")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GH_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
-GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"]
+GEMINI_FALLBACK = ["gemini-2.5-flash", "gemini-2.5-pro"]   # 一覧が引けないときの保険
 GH_MODELS = ["openai/gpt-4.1", "openai/gpt-4o", "openai/gpt-4o-mini"]
 JST = timezone(timedelta(hours=9))
 SILENCE_DAYS = 14          # これを超えて新しい回が来なければ、沈黙に応答する
@@ -242,9 +242,52 @@ def _extract_json(text):
         raise RuntimeError(f"モデルの返答をJSONとして読めませんでした。返答の冒頭: {text[:200]}")
 
 
+def list_gemini_models():
+    """いま実際に使えるモデルをGeminiに尋ねる（モデル名の改廃に自動で追随するため）。"""
+    req = urllib.request.Request(
+        "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+        headers={"x-goog-api-key": GEMINI_KEY},
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        data = json.load(r)
+    names = []
+    for m in data.get("models", []):
+        name = m.get("name", "").split("/")[-1]
+        if "generateContent" not in (m.get("supportedGenerationMethods") or []):
+            continue
+        if any(x in name for x in ("embedding", "aqa", "imagen", "veo", "tts",
+                                   "live", "vision", "image", "audio", "native")):
+            continue
+        names.append(name)
+    return names
+
+
+def _rank(name):
+    """文章を書かせるのに適した順に並べるための点数。"""
+    score = 0
+    if "flash" in name:   score += 100      # 無料枠が広く、日記一篇には十分
+    if "pro" in name:     score += 60
+    if "lite" in name:    score -= 25
+    if "preview" in name or "exp" in name: score -= 40
+    if re.search(r"-\d{2}-\d{2}$", name): score -= 10   # 日付入りの固定版は後回し
+    m = re.search(r"(\d+)(?:\.(\d+))?", name)
+    if m:
+        score += int(m.group(1)) * 10 + int(m.group(2) or 0)
+    return -score
+
+
 def call_gemini(system, user):
+    try:
+        models = sorted(list_gemini_models(), key=_rank)
+        print("  使えるモデル:", ", ".join(models[:8]) or "(なし)")
+    except Exception as e:
+        print(f"  モデル一覧を取得できませんでした（{e}）。既定の名前で試します。")
+        models = GEMINI_FALLBACK
+    if not models:
+        models = GEMINI_FALLBACK
+
     last_err = None
-    for model in GEMINI_MODELS:
+    for model in models[:5]:
         cfg = {
             "temperature": 1.0,
             "maxOutputTokens": 8192,
@@ -274,7 +317,11 @@ def call_gemini(system, user):
             return _extract_json(text)
         except Exception as e:
             last_err = e
-            print(f"  × {model}: {e}")
+            msg = str(e)
+            if "429" in msg:
+                print(f"  × {model}: 本日の無料枠を使い切っています。次の候補へ。")
+            else:
+                print(f"  × {model}: {e}")
     raise RuntimeError(f"Geminiでの生成に失敗しました: {last_err}")
 
 
@@ -308,15 +355,20 @@ def call_github_models(system, user):
 
 
 def call_model(system, user):
-    """GEMINI_API_KEY があれば Gemini、なければ GitHub Models。"""
+    """Geminiを主に使う。GitHub Models は現在提供終了(410)のため最後の保険。"""
     if GEMINI_KEY:
         try:
             return call_gemini(system, user)
         except Exception as e:
             print(f"Geminiが使えなかったため、GitHub Models に切り替えます: {e}")
     if GH_TOKEN:
-        return call_github_models(system, user)
-    raise RuntimeError("利用できる生成エンジンがありません。")
+        try:
+            return call_github_models(system, user)
+        except Exception as e:
+            print(f"GitHub Models も使えませんでした: {e}")
+    raise RuntimeError(
+        "生成できませんでした。GEMINI_API_KEY が正しいか、"
+        "無料枠の1日の上限に達していないかをご確認ください。")
 
 
 def environment_lines():
