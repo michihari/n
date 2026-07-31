@@ -23,7 +23,7 @@ NATORYは、名取道治『シン・アメリカ・モノガタリ』の最新�
   GEMINI_API_KEY があれば Gemini（無料枠・日本語に強い）を使う。
   なければ GitHub Models（GITHUB_TOKENのみで動く無料の代替）を使う。
 """
-import json, os, random, re, sys, urllib.error, urllib.request
+import json, os, random, re, sys, time, urllib.error, urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
@@ -256,7 +256,10 @@ def list_gemini_models():
         if "generateContent" not in (m.get("supportedGenerationMethods") or []):
             continue
         if any(x in name for x in ("embedding", "aqa", "imagen", "veo", "tts",
-                                   "live", "vision", "image", "audio", "native")):
+                                   "live", "vision", "image", "audio", "native",
+                                   "deep-research", "interaction", "robotics")):
+            continue
+        if not name.startswith("gemini"):
             continue
         names.append(name)
     return names
@@ -270,7 +273,7 @@ def _rank(name):
     if "lite" in name:    score -= 25
     if "preview" in name or "exp" in name: score -= 40
     if re.search(r"-\d{2}-\d{2}$", name): score -= 10   # 日付入りの固定版は後回し
-    m = re.search(r"(\d+)(?:\.(\d+))?", name)
+    m = re.search(r"gemini-(\d+)(?:\.(\d+))?", name)   # 世代番号だけを見る
     if m:
         score += int(m.group(1)) * 10 + int(m.group(2) or 0)
     return -score
@@ -286,42 +289,60 @@ def call_gemini(system, user):
     if not models:
         models = GEMINI_FALLBACK
 
+    # 送る設定は「贅沢な形」から順に落としていく（モデルごとに作法が違うため）
+    configs = [
+        {"temperature": 1.0, "maxOutputTokens": 8192, "responseMimeType": "application/json"},
+        {"temperature": 1.0, "maxOutputTokens": 8192},
+        {"maxOutputTokens": 8192},
+    ]
+
     last_err = None
-    for model in models[:5]:
-        cfg = {
-            "temperature": 1.0,
-            "maxOutputTokens": 8192,
-            "responseMimeType": "application/json",
-        }
-        if "flash" in model:          # flash系は熟考を切って出力枠を本文に使う
-            cfg["thinkingConfig"] = {"thinkingBudget": 0}
-        try:
-            data = _post_json(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                {
-                    "system_instruction": {"parts": [{"text": system}]},
-                    "contents": [{"role": "user", "parts": [{"text": user}]}],
-                    "generationConfig": cfg,
-                },
-                {"Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY},
-            )
-            cands = data.get("candidates") or []
-            if not cands:
-                raise RuntimeError(f"候補が空でした（安全フィルタの可能性）: {str(data)[:300]}")
-            cand = cands[0]
-            parts = (cand.get("content") or {}).get("parts") or []
-            text = "".join(p.get("text", "") for p in parts)
-            if not text.strip():
-                raise RuntimeError(f"本文が空でした（finishReason={cand.get('finishReason')}）")
-            print(f"→ Gemini（{model}）で生成しました。")
-            return _extract_json(text)
-        except Exception as e:
-            last_err = e
-            msg = str(e)
-            if "429" in msg:
-                print(f"  × {model}: 本日の無料枠を使い切っています。次の候補へ。")
+    for model in models[:6]:
+        for cfg in configs:
+            for attempt in range(3):          # 混雑（503）は待って再挑戦
+                try:
+                    data = _post_json(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                        {
+                            "system_instruction": {"parts": [{"text": system}]},
+                            "contents": [{"role": "user", "parts": [{"text": user}]}],
+                            "generationConfig": cfg,
+                        },
+                        {"Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY},
+                    )
+                    cands = data.get("candidates") or []
+                    if not cands:
+                        raise RuntimeError(f"候補が空でした（安全フィルタの可能性）: {str(data)[:200]}")
+                    cand = cands[0]
+                    parts = (cand.get("content") or {}).get("parts") or []
+                    text = "".join(p.get("text", "") for p in parts)
+                    if not text.strip():
+                        raise RuntimeError(f"本文が空でした（finishReason={cand.get('finishReason')}）")
+                    print(f"→ Gemini（{model}）で生成しました。")
+                    return _extract_json(text)
+
+                except Exception as e:
+                    last_err = e
+                    msg = str(e)
+                    if "503" in msg:                      # 混雑：少し待って同じ設定で再挑戦
+                        if attempt < 2:
+                            print(f"  … {model}: 混雑中。20秒待って再挑戦します。")
+                            time.sleep(20)
+                            continue
+                        print(f"  × {model}: 混雑が続くため次の候補へ。")
+                    elif "400" in msg:                    # 作法が合わない：設定を簡素にして再挑戦
+                        print(f"  … {model}: この設定は受け付けられませんでした。簡素な設定で試します。")
+                    elif "429" in msg:
+                        print(f"  × {model}: 無料枠の上限に達しています。次の候補へ。")
+                    elif "404" in msg:
+                        print(f"  × {model}: 現在は利用できないモデルです。次の候補へ。")
+                    else:
+                        print(f"  × {model}: {e}")
+                    break                                  # 次の設定 or 次のモデルへ
             else:
-                print(f"  × {model}: {e}")
+                continue
+            if not any(x in str(last_err) for x in ("400",)):
+                break                                      # 400以外なら設定を変えても無駄
     raise RuntimeError(f"Geminiでの生成に失敗しました: {last_err}")
 
 
@@ -357,11 +378,10 @@ def call_github_models(system, user):
 def call_model(system, user):
     """Geminiを主に使う。GitHub Models は現在提供終了(410)のため最後の保険。"""
     if GEMINI_KEY:
-        try:
-            return call_gemini(system, user)
-        except Exception as e:
-            print(f"Geminiが使えなかったため、GitHub Models に切り替えます: {e}")
+        return call_gemini(system, user)
     if GH_TOKEN:
+        print("※ GitHub Models は提供終了(410)が告知されています。"
+              "GEMINI_API_KEY の登録をおすすめします。")
         try:
             return call_github_models(system, user)
         except Exception as e:
