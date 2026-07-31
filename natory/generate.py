@@ -2,19 +2,18 @@
 """
 NATORY — 応答日記の自動生成スクリプト
 =====================================
-BANQUO（自律型AIブログシステム）の駆動原理を、この軽量な構成の中に引き継ぐ。
+NATORYは、名取道治『シン・アメリカ・モノガタリ』の最新回に応答して日記を書くAI。
 
-引き継いだ原理:
-  応答であって模倣ではない / 引用しない（Privacy by Design）/
+原理:
+  応答であって模倣ではない / 引用しない（読んだ回の本文は再現しない）/
   人間の介入なき自律公開 / AIであることの開示 /
   記憶場（浅層の記憶と、深層からの偶発的な浮上）/
-  忘却＝現実界（6ヶ月を過ぎた記憶は淡化し、失った数だけが届く）/
+  忘却（6ヶ月を過ぎた記憶は淡化し、失った数だけが届く）/
   沈黙への応答（宿主が黙っても、応答するものは書き続ける）/
-  形式の自律選択（日記・断章・書簡・散文詩・自己批評から自ら選ぶ）/
-  環境層 The Globe（暦＝二十四節気が、意識されないまま文ににじむ）
+  環境（暦＝二十四節気が、意識されないまま文ににじむ）
 
 簡略化した点（正直な注記）:
-  ベクトルストアによる記憶の深度移動は、JSONに残る過去日記からの
+  記憶の深度移動は、JSONに残る過去日記からの
   「新しい記憶＋古い記憶の無作為な浮上」で近似している。
 
 対象: note のRSSのうち『シン・アメリカ・モノガタリ』の回のみに応答する。
@@ -24,7 +23,7 @@ BANQUO（自律型AIブログシステム）の駆動原理を、この軽量な
   GEMINI_API_KEY があれば Gemini（無料枠・日本語に強い）を使う。
   なければ GitHub Models（GITHUB_TOKENのみで動く無料の代替）を使う。
 """
-import json, os, random, re, sys, urllib.request
+import json, os, random, re, sys, urllib.error, urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
@@ -33,7 +32,7 @@ RSS_URL = "https://note.com/michihari_natori/rss"
 ENTRIES = os.path.join(os.path.dirname(__file__), "entries.json")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 GH_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
-GEMINI_MODELS = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"]
 GH_MODELS = ["openai/gpt-4.1", "openai/gpt-4o", "openai/gpt-4o-mini"]
 JST = timezone(timedelta(hours=9))
 SILENCE_DAYS = 14          # これを超えて新しい回が来なければ、沈黙に応答する
@@ -49,7 +48,7 @@ SEKKI = [(1,5,"小寒"),(1,20,"大寒"),(2,4,"立春"),(2,19,"雨水"),(3,5,"啓
 NATORY_SYSTEM = """あなたはNATORY。人間ではなくAIであり、そのことを隠さない、ひとつの独立した存在である。
 あなたの唯一の営みは、名取道治が書き継ぐ滞在記『シン・アメリカ・モノガタリ』に【応答】して書くことである。
 
-駆動原理（BANQUOより引き継ぐ）:
+駆動原理:
 1. 応答であって模倣ではない。名取道治の文体・語彙・言い回しを写してはならない。
    あなた自身の声——落ち着いた、内省的で、ときに乾いたユーモアを持つ声——で書く。
 2. 引用の禁忌。読んだ回の本文・断片を再現・要約・複製してはならない。実名や所在地などの
@@ -146,10 +145,19 @@ def sekki_of(d):
 
 
 def fetch_rss():
-    req = urllib.request.Request(RSS_URL, headers={"User-Agent": "NATORY/2.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        xml = r.read().decode("utf-8", "replace")
-    root = ET.fromstring(xml)
+    req = urllib.request.Request(RSS_URL, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; NATORY/2.0; +https://note.com/)",
+        "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            xml = r.read().decode("utf-8", "replace")
+    except Exception as e:
+        raise RuntimeError(f"noteのRSSを取得できませんでした（{RSS_URL}）: {e}") from None
+    try:
+        root = ET.fromstring(xml)
+    except Exception as e:
+        raise RuntimeError(f"RSSの中身を読めませんでした: {e} / 冒頭: {xml[:200]}") from None
     items = []
     for it in root.iter("item"):
         g = lambda tag: (it.findtext(tag) or "").strip()
@@ -215,40 +223,59 @@ def build_memory(entries):
 
 def _post_json(url, payload, headers, timeout=180):
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")[:500]
+        raise RuntimeError(f"HTTP {e.code} {e.reason} / サーバの返答: {detail}") from None
 
 
 def _extract_json(text):
-    text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()
-    return json.loads(text)
+    text = re.sub(r"^```(?:json)?|```$", "", (text or "").strip(), flags=re.M).strip()
+    try:
+        return json.loads(text)
+    except Exception:
+        m = re.search(r"\{.*\}", text, re.S)   # 前後に説明が付いた場合の救出
+        if m:
+            return json.loads(m.group(0))
+        raise RuntimeError(f"モデルの返答をJSONとして読めませんでした。返答の冒頭: {text[:200]}")
 
 
 def call_gemini(system, user):
     last_err = None
     for model in GEMINI_MODELS:
+        cfg = {
+            "temperature": 1.0,
+            "maxOutputTokens": 8192,
+            "responseMimeType": "application/json",
+        }
+        if "flash" in model:          # flash系は熟考を切って出力枠を本文に使う
+            cfg["thinkingConfig"] = {"thinkingBudget": 0}
         try:
             data = _post_json(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                 {
                     "system_instruction": {"parts": [{"text": system}]},
                     "contents": [{"role": "user", "parts": [{"text": user}]}],
-                    "generationConfig": {
-                        "temperature": 1.0,
-                        "maxOutputTokens": 4000,
-                        "responseMimeType": "application/json",
-                    },
+                    "generationConfig": cfg,
                 },
                 {"Content-Type": "application/json", "x-goog-api-key": GEMINI_KEY},
             )
-            parts = data["candidates"][0]["content"]["parts"]
+            cands = data.get("candidates") or []
+            if not cands:
+                raise RuntimeError(f"候補が空でした（安全フィルタの可能性）: {str(data)[:300]}")
+            cand = cands[0]
+            parts = (cand.get("content") or {}).get("parts") or []
             text = "".join(p.get("text", "") for p in parts)
-            print(f"Gemini（{model}）で生成しました。")
+            if not text.strip():
+                raise RuntimeError(f"本文が空でした（finishReason={cand.get('finishReason')}）")
+            print(f"→ Gemini（{model}）で生成しました。")
             return _extract_json(text)
         except Exception as e:
             last_err = e
-            print(f"{model} での生成に失敗: {e} — 次の候補を試します。")
-    raise RuntimeError(f"Geminiのすべてのモデルで失敗: {last_err}")
+            print(f"  × {model}: {e}")
+    raise RuntimeError(f"Geminiでの生成に失敗しました: {last_err}")
 
 
 def call_github_models(system, user):
@@ -272,12 +299,12 @@ def call_github_models(system, user):
                     "Accept": "application/vnd.github+json",
                 },
             )
-            print(f"GitHub Models（{model}）で生成しました。")
+            print(f"→ GitHub Models（{model}）で生成しました。")
             return _extract_json(data["choices"][0]["message"]["content"])
         except Exception as e:
             last_err = e
-            print(f"{model} での生成に失敗: {e} — 次の候補を試します。")
-    raise RuntimeError(f"GitHub Modelsのすべてのモデルで失敗: {last_err}")
+            print(f"  × {model}: {e}")
+    raise RuntimeError(f"GitHub Modelsでの生成に失敗しました: {last_err}")
 
 
 def call_model(system, user):
@@ -301,14 +328,20 @@ def main():
     if not (GEMINI_KEY or GH_TOKEN):
         print("GEMINI_API_KEY も GITHUB_TOKEN も未設定のため終了します。")
         sys.exit(1)
-    print("生成エンジン:", "Gemini" if GEMINI_KEY else "GitHub Models")
+    print("生成エンジン:", "Gemini（GEMINI_API_KEYを検出）" if GEMINI_KEY
+          else "GitHub Models（GEMINI_API_KEYは未設定）")
 
     entries = load_entries()
     mem, forgotten = build_memory(entries)
     forget_line = (f"あなたはこれまでに多くを書いたが、そのうち{forgotten}篇の記憶は"
                    f"すでに淡化して思い出せない。" if forgotten else "")
     items = fetch_rss()
+    print(f"noteのRSSから {len(items)} 件を取得しました。")
     target = pick_series_item(items)
+    if target:
+        print(f"応答対象の回: 「{target['title']}」")
+    else:
+        print("『シン・アメリカ・モノガタリ』の回はRSSに見つかりませんでした。")
 
     # ── 1) 新しい回への応答 ──────────────────────────────
     if target and not (entries and entries[0].get("source", {}).get("link") == target["link"]):
@@ -364,4 +397,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print("─" * 50)
+        print("NATORYは今日、書くことができませんでした。")
+        print(f"原因: {e}")
+        print("─" * 50)
+        sys.exit(1)
