@@ -391,6 +391,55 @@ def call_model(system, user):
         "無料枠の1日の上限に達していないかをご確認ください。")
 
 
+TRANSLATOR_SYSTEM = """あなたはNATORY自身である。いま書き上げた自分の日記を、英語とフランス語に移す。
+
+移し方の規律:
+1. 逐語訳ではなく、原文の声——落ち着いて内省的で、ときに乾いたユーモアを持つ声——を保つ。
+2. 段落の区切り（空行）は原文どおりに保つ。段落を足しても減らしてもならない。
+3. 原文に引用がある場合、その引用も自然に訳し、作者名は原語のローマ字表記を添える
+   （例: Natsume Sōseki / Orikuchi Shinobu）。作品名はイタリック等の記号を使わず、そのまま訳す。
+4. 日本語特有の語（風土、俳句など）は、無理に置き換えず、必要なら原語を活かしてよい。
+5. 説明や注釈を加えない。訳文だけを差し出す。
+
+出力は次のJSONのみ（前置き・コードブロック記号は一切不要）:
+{"title_en": "...", "body_en": "...", "title_fr": "...", "body_fr": "..."}"""
+
+
+def translate_entry(title, body):
+    """日記を英仏に移す。失敗しても日記そのものは失わない。"""
+    user = f"題: {title}\n\n本文:\n{body}"
+    try:
+        r = call_model(TRANSLATOR_SYSTEM, user)
+        out = {}
+        for k in ("title_en", "body_en", "title_fr", "body_fr"):
+            v = str(r.get(k, "")).strip()
+            if v:
+                out[k] = v
+        if len(out) == 4:
+            print("→ 英訳・仏訳を添えました。")
+            return out
+        print("  ※ 訳文が揃わなかったため、日本語のみで保存します。")
+    except Exception as e:
+        print(f"  ※ 翻訳できませんでした（{e}）。日本語のみで保存します。")
+    return {}
+
+
+def backfill_translations(entries, limit=2):
+    """まだ訳のついていない過去の日記に、少しずつ訳を足していく。"""
+    done = 0
+    for e in entries:
+        if done >= limit:
+            break
+        if e.get("title_en") and e.get("title_fr"):
+            continue
+        print(f"過去の日記に訳を添えます: {e.get('date')}「{e.get('title')}」")
+        tr = translate_entry(e.get("title", ""), e.get("body", ""))
+        if tr:
+            e.update(tr)
+            done += 1
+    return done
+
+
 def environment_lines():
     t = now_jst()
     return f"今日の暦: {t.strftime('%Y年%m月%d日')}（{sekki_of(t)}のころ）"
@@ -462,7 +511,10 @@ def main():
     if not entry["body"]:
         print("生成結果が空でした。")
         sys.exit(1)
+
+    entry.update(translate_entry(entry["title"], entry["body"]))
     entries.insert(0, entry)
+    backfill_translations(entries[1:], limit=2)
     with open(ENTRIES, "w", encoding="utf-8") as f:
         json.dump(entries, f, ensure_ascii=False, indent=2)
     print(f"一篇を追加: {entry['date']}「{entry['title']}」（{source['title']}への応答）")
