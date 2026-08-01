@@ -212,9 +212,15 @@ body:not([data-lang="ja"]) .feature h2.oneline{white-space:normal}
   position:relative;min-height:400px;
   display:flex;align-items:center;
 }
-body:not([data-lang="ja"]) .f-quote.haiku{text-indent:0;max-width:20em}
+body:not([data-lang="ja"]) .f-quote.haiku{
+  display:block;text-indent:0;
+  text-align:center;
+  max-width:22em;margin:0 auto;
+  padding:2.6rem 2.2rem;
+  line-height:2.15;letter-spacing:.02em;
+}
 .h-sign{
-  display:block;margin-top:1.2em;
+  display:block;margin-top:1.6em;
   font-family:'Zen Kaku Gothic New',sans-serif;
   font-size:.72rem;letter-spacing:.18em;opacity:.7;font-weight:400;
 }
@@ -1352,53 +1358,53 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
     function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
     var HAIKU = [
       {ja:"懐手だし抜けに英語の笑ひ",
-       en:["hands tucked in my sleeves —","out of the blue, laughter","in English"],
-       fr:["Mains au creux des manches —","brusquement un rire","anglais se déclenche"]},
+       en:["Hands tucked in my sleeves","out of the blue, laughter","in English"],
+       fr:["Mains au creux des manches","brusquement un rire","anglais se déclenche"]},
       {ja:"寒明のコヨーテ吼ゆる国境",
-       en:["the great cold ends —","a coyote howling","at the border"],
-       fr:["Fin des grands froids —","le hurlement d'un coyote","à la frontière"]},
+       en:["The great cold ends","a coyote howling","at the border"],
+       fr:["Fin des grands froids","le hurlement d'un coyote","à la frontière"]},
       {ja:"消えてゆく煙雨の港紫木蓮",
-       en:["fading away —","the harbour in misty rain,","purple magnolia"],
-       fr:["Il s'efface, le port,","sous la bruine —","magnolia pourpre"]},
+       en:["Fading away","the harbour in misty rain","purple magnolia"],
+       fr:["Il s'efface, le port","sous la bruine","magnolia pourpre"]},
       {ja:"春驟雨やけに朽木のこざつぱり",
-       en:["spring downpour —","the rotting wood looks","oddly spruce"],
-       fr:["Giboulée de printemps —","le bois pourri se fait","étrangement pimpant"]},
+       en:["Spring downpour","the rotting wood looks","oddly spruce"],
+       fr:["Giboulée de printemps","le bois pourri se fait","étrangement pimpant"]},
       {ja:"大川にまばゆき音を初筏",
-       en:["on the great river","a dazzling sound —","the season's first raft"],
-       fr:["Sur le grand fleuve, un son","éblouissant —","le premier radeau de la saison"]},
+       en:["On the great river","a dazzling sound","the season's first raft"],
+       fr:["Sur le grand fleuve","un son éblouissant","le premier radeau de la saison"]},
       {ja:"春光の卓台義父と螺子を巻く",
-       en:["spring light —","at the workbench, turning screws","with my father-in-law"],
-       fr:["Clarté printanière —","à l'établi, mon beau-père :","on serre les vis"]},
+       en:["Spring light","at the workbench, turning screws","with my father-in-law"],
+       fr:["Clarté printanière","à l'établi, mon beau-père","on serre les vis"]},
       {ja:"淡雪や懲りずに泥沼の戦",
-       en:["faint spring snow —","never a lesson learned,","the war still a quagmire"],
-       fr:["Neige fragile —","sans leçon apprise,","la guerre s'enlise"]},
+       en:["Faint spring snow","never a lesson learned","the war still a quagmire"],
+       fr:["Neige fragile","sans leçon apprise","la guerre s'enlise"]},
       {ja:"花冷の猫くるまつて花のごと",
-       en:["the chill among blossoms —","the cat curls himself up","like a flower"],
-       fr:["Froid des fleurs —","le chat s'enroule","comme une fleur"]},
+       en:["The chill among blossoms","the cat curls himself up","like a flower"],
+       fr:["Froid des fleurs","le chat s'enroule","comme une fleur"]},
       {ja:"うしろから抱く牡丹雪降る髪も",
-       en:["an embrace from behind —","great flakes of snow falling,","falling on the hair too"],
-       fr:["Enlacer par-derrière —","la neige en pivoines","tombe aussi sur les cheveux"]},
+       en:["An embrace from behind","great flakes of snow falling","falling on the hair too"],
+       fr:["Enlacer par-derrière","la neige en pivoines","tombe aussi sur les cheveux"]},
       {ja:"浮橋の車列眩しき花の雨",
-       en:["on the floating bridge","the line of cars, dazzling —","rain on the blossoms"],
-       fr:["Sur le pont flottant,","la file des voitures, éblouissante —","pluie sur les fleurs"]},
+       en:["On the floating bridge","the line of cars, dazzling","rain on the blossoms"],
+       fr:["Sur le pont flottant","la file des voitures, éblouissante","pluie sur les fleurs"]},
       {ja:"ハイビーム焚けばネヴァダの山笑ふ",
-       en:["high beams blazing —","the mountains of Nevada","begin to laugh"],
-       fr:["Pleins phares allumés —","les montagnes du Nevada","se mettent à rire"]},
+       en:["High beams blazing","the mountains of Nevada","begin to laugh"],
+       fr:["Pleins phares allumés","les montagnes du Nevada","se mettent à rire"]},
       {ja:"逃水のぞくぞく逃げて喉渇く",
-       en:["mirage water","fleeing, one after another —","my throat goes dry"],
-       fr:["L'eau du mirage","fuit et fuit encore —","ma gorge s'assèche"]},
+       en:["Mirage water","fleeing, one after another","my throat goes dry"],
+       fr:["L'eau du mirage","fuit et fuit encore","ma gorge s'assèche"]},
       {ja:"逃水のどんどん黒く乾きをる",
-       en:["mirage water","turning blacker and blacker,","drying away"],
-       fr:["L'eau du mirage","de plus en plus noircit —","puis tarit"]},
+       en:["Mirage water","turning blacker and blacker","drying away"],
+       fr:["L'eau du mirage","de plus en plus noircit","puis tarit"]},
       {ja:"春夕焼ぐにやりと熔ける鉄パイプ",
-       en:["spring sunset —","an iron pipe melting","out of shape"],
-       fr:["Couchant de printemps —","le tuyau de fer","se tord en fondant"]},
+       en:["Spring sunset","an iron pipe melting","out of shape"],
+       fr:["Couchant de printemps","le tuyau de fer","se tord en fondant"]},
       {ja:"夕永しこの牛は朝〆といふ",
-       en:["the long spring evening —","this cow, they say,","will be killed at dawn"],
-       fr:["Le long soir de printemps —","cette vache, dit-on,","sera abattue au matin"]},
+       en:["The long spring evening","this cow, they say","will be killed at dawn"],
+       fr:["Le long soir de printemps","cette vache, dit-on","sera abattue au matin"]},
       {ja:"グランドキャニオン雪解の死者生者",
-       en:["Grand Canyon —","the snow melting,","the dead and the living"],
-       fr:["Grand Canyon —","la fonte des neiges :","les morts et les vivants"]}
+       en:["Grand Canyon","the snow melting","the dead and the living"],
+       fr:["Grand Canyon","la fonte des neiges","les morts et les vivants"]}
     ];
     var idx = Math.floor(Math.random() * HAIKU.length);
 
@@ -1411,7 +1417,7 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
         el.innerHTML = esc(h.ja) + "　　道治";
       } else {
         el.innerHTML = h[l].map(esc).join("<br>")
-                     + '<span class="h-sign">— Michihari</span>';
+                     + '<span class="h-sign">Michihari</span>';
       }
     }
     renderHaiku();
