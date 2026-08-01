@@ -38,7 +38,7 @@ body{
 nav{
   position:absolute;top:0;left:0;right:0;z-index:100;
   display:flex;justify-content:flex-end;align-items:center;
-  padding:1.2rem 2rem;
+  padding:1.2rem 2rem;padding-right:11rem;
   mix-blend-mode:difference;
 }
 .nav-right{display:flex;align-items:center;gap:2rem}
@@ -51,7 +51,11 @@ nav ul a{
 }
 nav ul a:hover,nav ul a:focus-visible{border-bottom-color:#f3eede}
 nav a:focus-visible,.lang-sw button:focus-visible{outline:2px solid var(--icho);outline-offset:4px}
-.lang-sw{display:flex;gap:.9rem;list-style:none;border-left:1px solid rgba(243,238,222,.35);padding-left:1.6rem}
+.lang-sw{
+  position:absolute;top:1.2rem;right:2rem;z-index:120;
+  display:flex;gap:.9rem;list-style:none;
+  mix-blend-mode:difference;
+}
 .lang-sw button{
   background:none;border:none;cursor:pointer;
   color:#f3eede;opacity:.5;
@@ -207,6 +211,12 @@ body:not([data-lang="ja"]) .feature h2.oneline{white-space:normal}
   border:1px solid rgba(227,180,34,.35);
   position:relative;min-height:400px;
   display:flex;align-items:center;
+}
+body:not([data-lang="ja"]) .f-quote.haiku{text-indent:0;max-width:20em}
+.h-sign{
+  display:block;margin-top:1.2em;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  font-size:.72rem;letter-spacing:.18em;opacity:.7;font-weight:400;
 }
 body:not([data-lang="ja"]) .f-quote{
   writing-mode:horizontal-tb;
@@ -403,11 +413,11 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
 
 /* ───── responsive ───── */
 @media (max-width:820px){
-  nav{flex-wrap:wrap;gap:.6rem}
+  nav{flex-wrap:wrap;gap:.6rem;padding:3.2rem 1rem 1rem}
   .nav-right{gap:1rem;flex-wrap:wrap}
   nav ul{gap:1.1rem}
   nav ul a{font-size:.66rem;letter-spacing:.16em}
-  .lang-sw{padding-left:1rem;gap:.7rem}
+  .lang-sw{top:.9rem;right:1rem;gap:.8rem}
   .hero-inner{gap:1.8rem;padding:5.5rem 1.2rem 5rem}
   .hero-latin{left:1.2rem;bottom:1.4rem;font-size:.78rem;letter-spacing:.5em}
   .feature-grid,.feature-grid.rev{grid-template-columns:1fr}
@@ -434,13 +444,15 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       <li><a href="#press">Press</a></li>
       <li><a href="#contact">Contact</a></li>
     </ul>
-    <div class="lang-sw" role="group" aria-label="Language">
+  </div>
+</nav>
+
+<div class="lang-sw" role="group" aria-label="Language">
       <button type="button" data-setlang="ja" class="on" lang="ja">日本語</button>
       <button type="button" data-setlang="en" lang="en">EN</button>
       <button type="button" data-setlang="fr" lang="fr">FR</button>
     </div>
-  </div>
-</nav>
+
 
 <!-- ═══ HERO ═══ -->
 <header class="hero" id="top">
@@ -1017,7 +1029,7 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
         <p data-i18n="w3body">季語の宇宙を詠むことは、体の立っている風土を表すことに通ず。</p>
       </div>
       <div class="reveal">
-        <p class="f-quote haiku" data-i18n="w3quote" style="transform:translateX(-1cm);text-indent:1em">消えてゆく煙雨の港紫木蓮　　道治</p>
+        <p class="f-quote haiku" id="haiku" style="transform:translateX(-1cm);text-indent:1em">消えてゆく煙雨の港紫木蓮　　道治</p>
       </div>
     </div>
   </div>
@@ -1186,7 +1198,6 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       w3num: "III — 俳句",
       w3title: "風土詩",
       w3body: "季語の宇宙を詠むことは、体の立っている風土を表すことに通ず。",
-      w3quote: "消えてゆく煙雨の港紫木蓮　　道治",
       ctitle: "デジタル風土",
       cquote: "人間と、<br>デジタル空間、あるいは<br>デジタルネイチャーの間に、<br>デジタル風土は存在する。",
       cbody1: "和辻哲郎の『風土』、オギュスタン・ベルクの風土学。その系譜の先に「デジタル風土（le milieu numérique）」を見いだす。「デジタル風土論」（『現代人5』所収）は、人間とデジタル空間のあいだに立ち現れる、新しい風土を論じる試みである。",
@@ -1222,7 +1233,6 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       w3num: "III — Haiku",
       w3title: "Fūdo Poems",
       w3body: "To compose the cosmos of a season word is to give voice to the fūdo on which one's body stands.",
-      w3quote: "Fading away —<br>a port in misty rain,<br>purple magnolia<br>— Michihari",
       ctitle: "The Digital Fūdo",
       cquote: "Between the human being and digital space — or digital nature — there exists a digital fūdo.",
       cbody1: "Watsuji Tetsurō's Fūdo; Augustin Berque's mesology. At the far end of that lineage lies the digital fūdo. \"A Theory of the Digital Fūdo\" (in Gendaijin 5) is an attempt to think through this new milieu — le milieu numérique — that arises between human beings and digital space.",
@@ -1258,7 +1268,6 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
       w3num: "III — Haïku",
       w3title: "Poèmes du milieu",
       w3body: "Chanter l'univers du mot de saison, c'est exprimer le milieu où se tient le corps.",
-      w3quote: "S'effaçant —<br>le port sous la bruine,<br>magnolia pourpre<br>— Michihari",
       ctitle: "Le milieu numérique",
       cquote: "Entre l'être humain et l'espace numérique — ou la nature numérique — existe un milieu numérique.",
       cbody1: "Le Fûdo de Watsuji Tetsurō ; la mésologie d'Augustin Berque. Au bout de cette lignée se découvre le milieu numérique. La « Théorie du milieu numérique » (dans Gendaijin 5) tente de penser le nouveau milieu qui surgit entre l'être humain et l'espace numérique.",
@@ -1338,30 +1347,123 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
 
 
 
-  /* ── NATORY：生成済みの日記（natory/entries.json）があれば最新のものを表示 ── */
+  /* ── Ⅲ 俳句：訪れるたびに一句を選ぶ（日英仏） ── */
   (function(){
     function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
+    var HAIKU = [
+      {ja:"懐手だし抜けに英語の笑ひ",
+       en:["hands tucked in my sleeves —","out of the blue, laughter","in English"],
+       fr:["Mains au creux des manches —","brusquement un rire","anglais se déclenche"]},
+      {ja:"寒明のコヨーテ吼ゆる国境",
+       en:["the great cold ends —","a coyote howling","at the border"],
+       fr:["Fin des grands froids —","le hurlement d'un coyote","à la frontière"]},
+      {ja:"消えてゆく煙雨の港紫木蓮",
+       en:["fading away —","the harbour in misty rain,","purple magnolia"],
+       fr:["Il s'efface, le port,","sous la bruine —","magnolia pourpre"]},
+      {ja:"春驟雨やけに朽木のこざつぱり",
+       en:["spring downpour —","the rotting wood looks","oddly spruce"],
+       fr:["Giboulée de printemps —","le bois pourri se fait","étrangement pimpant"]},
+      {ja:"大川にまばゆき音を初筏",
+       en:["on the great river","a dazzling sound —","the season's first raft"],
+       fr:["Sur le grand fleuve, un son","éblouissant —","le premier radeau de la saison"]},
+      {ja:"春光の卓台義父と螺子を巻く",
+       en:["spring light —","at the workbench, turning screws","with my father-in-law"],
+       fr:["Clarté printanière —","à l'établi, mon beau-père :","on serre les vis"]},
+      {ja:"淡雪や懲りずに泥沼の戦",
+       en:["faint spring snow —","never a lesson learned,","the war still a quagmire"],
+       fr:["Neige fragile —","sans leçon apprise,","la guerre s'enlise"]},
+      {ja:"花冷の猫くるまつて花のごと",
+       en:["the chill among blossoms —","the cat curls himself up","like a flower"],
+       fr:["Froid des fleurs —","le chat s'enroule","comme une fleur"]},
+      {ja:"うしろから抱く牡丹雪降る髪も",
+       en:["an embrace from behind —","great flakes of snow falling,","falling on the hair too"],
+       fr:["Enlacer par-derrière —","la neige en pivoines","tombe aussi sur les cheveux"]},
+      {ja:"浮橋の車列眩しき花の雨",
+       en:["on the floating bridge","the line of cars, dazzling —","rain on the blossoms"],
+       fr:["Sur le pont flottant,","la file des voitures, éblouissante —","pluie sur les fleurs"]},
+      {ja:"ハイビーム焚けばネヴァダの山笑ふ",
+       en:["high beams blazing —","the mountains of Nevada","begin to laugh"],
+       fr:["Pleins phares allumés —","les montagnes du Nevada","se mettent à rire"]},
+      {ja:"逃水のぞくぞく逃げて喉渇く",
+       en:["mirage water","fleeing, one after another —","my throat goes dry"],
+       fr:["L'eau du mirage","fuit et fuit encore —","ma gorge s'assèche"]},
+      {ja:"逃水のどんどん黒く乾きをる",
+       en:["mirage water","turning blacker and blacker,","drying away"],
+       fr:["L'eau du mirage","de plus en plus noircit —","puis tarit"]},
+      {ja:"春夕焼ぐにやりと熔ける鉄パイプ",
+       en:["spring sunset —","an iron pipe melting","out of shape"],
+       fr:["Couchant de printemps —","le tuyau de fer","se tord en fondant"]},
+      {ja:"夕永しこの牛は朝〆といふ",
+       en:["the long spring evening —","this cow, they say,","will be killed at dawn"],
+       fr:["Le long soir de printemps —","cette vache, dit-on,","sera abattue au matin"]},
+      {ja:"グランドキャニオン雪解の死者生者",
+       en:["Grand Canyon —","the snow melting,","the dead and the living"],
+       fr:["Grand Canyon —","la fonte des neiges :","les morts et les vivants"]}
+    ];
+    var idx = Math.floor(Math.random() * HAIKU.length);
+
+    function renderHaiku(){
+      var el = document.getElementById("haiku");
+      if(!el) return;
+      var l = document.body.dataset.lang || "ja";
+      var h = HAIKU[idx];
+      if(l === "ja" || !h[l]){
+        el.innerHTML = esc(h.ja) + "　　道治";
+      } else {
+        el.innerHTML = h[l].map(esc).join("<br>")
+                     + '<span class="h-sign">— Michihari</span>';
+      }
+    }
+    renderHaiku();
+    document.querySelectorAll(".lang-sw button").forEach(function(b){
+      b.addEventListener("click", function(){ setTimeout(renderHaiku, 0); });
+    });
+  })();
+
+  /* ── NATORY：最新の日記を表示（日英仏に追随） ── */
+  (function(){
+    function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
+    var entry = null;
+    var SRC = {ja:"応答した回：", en:"In response to: ", fr:"En réponse à : "};
+
+    function lang(){ return document.body.dataset.lang || "ja"; }
+    function pick(e, field){
+      var l = lang();
+      if(l !== "ja" && e[field + "_" + l]) return e[field + "_" + l];
+      return e[field] || "";
+    }
+    function render(){
+      var host = document.getElementById("natory-latest");
+      if(!host || !entry) return;
+      var wasOpen = host.querySelector("details") && host.querySelector("details").open;
+      var body = pick(entry, "body").split(/\n\n+/)
+                   .map(function(p){return "<p>"+esc(p)+"</p>";}).join("");
+      var src = "";
+      if(entry.source && entry.source.link && /^https?:/.test(entry.source.link)){
+        src = '<p class="n-src">' + esc(SRC[lang()] || SRC.ja)
+            + '<a href="'+esc(entry.source.link)+'" target="_blank" rel="noopener">'
+            + esc(entry.source.title || entry.source.link) + '</a></p>';
+      }
+      host.innerHTML =
+        '<details class="natory-entry"' + (wasOpen ? ' open' : '') + '>'
+        + '<summary><span class="n-date">'+esc(entry.date)+'</span>'
+        + '<span class="n-title">'+esc(pick(entry,"title"))+'</span>'
+        + '<span class="n-mark" aria-hidden="true"></span></summary>'
+        + '<div class="n-body">'+body+src+'</div></details>';
+    }
+
     fetch("natory/entries.json",{cache:"no-store"})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(list){
         if(!list || !list.length) return;
-        var e = list[0];
-        var host = document.getElementById("natory-latest");
-        if(!host) return;
-        var body = e.body.split(/\n\n+/).map(function(p){return "<p>"+esc(p)+"</p>";}).join("");
-        var src = "";
-        if(e.source && e.source.link && /^https?:/.test(e.source.link)){
-          src = '<p class="n-src">応答した回：<a href="'+esc(e.source.link)+'" target="_blank" rel="noopener">'
-              + esc(e.source.title || e.source.link) + '</a></p>';
-        }
-        host.innerHTML =
-          '<details class="natory-entry">'
-          + '<summary><span class="n-date">'+esc(e.date)+'</span>'
-          + '<span class="n-title">'+esc(e.title)+'</span>'
-          + '<span class="n-mark" aria-hidden="true"></span></summary>'
-          + '<div class="n-body">'+body+src+'</div></details>';
+        entry = list[0];
+        render();
       })
       .catch(function(){ /* 未生成のあいだは組み込みの初回日記を表示 */ });
+
+    document.querySelectorAll(".lang-sw button").forEach(function(b){
+      b.addEventListener("click", function(){ setTimeout(render, 0); });
+    });
   })();
 
   /* ── お問い合わせフォーム ──
