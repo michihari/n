@@ -440,6 +440,22 @@ def backfill_translations(entries, limit=2):
     return done
 
 
+def save_entries(entries):
+    with open(ENTRIES, "w", encoding="utf-8") as f:
+        json.dump(entries, f, ensure_ascii=False, indent=2)
+
+
+def only_backfill(entries, reason):
+    """新しい日記を書かない日は、過去の日記に訳を足していく。"""
+    print(reason)
+    n = backfill_translations(entries, limit=2)
+    if n:
+        save_entries(entries)
+        print(f"過去の日記 {n} 篇に英訳・仏訳を添えました。")
+    else:
+        print("訳の足りていない日記はありません。")
+
+
 def environment_lines():
     t = now_jst()
     return f"今日の暦: {t.strftime('%Y年%m月%d日')}（{sekki_of(t)}のころ）"
@@ -484,11 +500,11 @@ def main():
         last_resp = parse_entry_date(entries[0]) if entries else None
         ref = max([d for d in (last_pub, last_resp) if d], default=None)
         if not ref or (now_jst() - ref).days < SILENCE_DAYS:
-            print("新しい回はなく、沈黙もまだ浅い。今日は書かない。")
+            only_backfill(entries, "新しい回はなく、沈黙もまだ浅い。今日は日記を書かない。")
             return
         week_key = f"silence:{now_jst().strftime('%G-W%V')}"
         if entries and entries[0].get("source", {}).get("link") == week_key:
-            print("この週の沈黙にはすでに応答済み。")
+            only_backfill(entries, "この週の沈黙にはすでに応答済み。")
             return
         days = (now_jst() - ref).days
         user = (
@@ -515,8 +531,7 @@ def main():
     entry.update(translate_entry(entry["title"], entry["body"]))
     entries.insert(0, entry)
     backfill_translations(entries[1:], limit=2)
-    with open(ENTRIES, "w", encoding="utf-8") as f:
-        json.dump(entries, f, ensure_ascii=False, indent=2)
+    save_entries(entries)
     print(f"一篇を追加: {entry['date']}「{entry['title']}」（{source['title']}への応答）")
 
 
