@@ -180,11 +180,28 @@ def fetch_rss():
             pub = parsedate_to_datetime(g("pubDate"))
         except Exception:
             pass
+
+        # サムネイル（media:thumbnail / enclosure / 本文中の最初の画像）
+        thumb = ""
+        for child in it:
+            tag = child.tag.split("}")[-1]
+            if tag in ("thumbnail", "content") and not thumb:
+                thumb = (child.get("url") or (child.text or "")).strip()
+            elif tag == "enclosure" and not thumb:
+                if (child.get("type") or "").startswith("image"):
+                    thumb = (child.get("url") or "").strip()
+        if not thumb:
+            raw = "".join(c.text or "" for c in it if c.tag.split("}")[-1] in ("encoded", "description"))
+            m = re.search(r'<img[^>]+src="([^"]+)"', raw)
+            if m:
+                thumb = m.group(1)
+
         items.append({
             "title": g("title"),
             "link": g("link"),
             "description": re.sub(r"<[^>]+>", "", g("description"))[:600],
             "pub": pub,
+            "thumb": thumb,
         })
     return items
 
@@ -470,6 +487,31 @@ def only_backfill(entries, reason):
         print("訳の足りていない日記はありません。")
 
 
+LATEST = os.path.join(os.path.dirname(__file__), "latest.json")
+
+
+def save_latest(target):
+    """お知らせカード用に、最新回の題・リンク・日付・サムネイルを書き出す。"""
+    if not target:
+        return
+    info = {
+        "title": target.get("title", ""),
+        "link": target.get("link", ""),
+        "date": target["pub"].astimezone(JST).strftime("%Y.%m.%d") if target.get("pub") else "",
+        "thumbnail": target.get("thumb", ""),
+    }
+    try:
+        with open(LATEST, encoding="utf-8") as f:
+            if json.load(f) == info:
+                return
+    except Exception:
+        pass
+    with open(LATEST, "w", encoding="utf-8") as f:
+        json.dump(info, f, ensure_ascii=False, indent=2)
+    print(f"最新回の情報を更新しました: {info['date']}「{info['title']}」"
+          + ("（サムネイルあり）" if info["thumbnail"] else "（サムネイルなし）"))
+
+
 def environment_lines():
     t = now_jst()
     return f"今日の暦: {t.strftime('%Y年%m月%d日')}（{sekki_of(t)}のころ）"
@@ -491,6 +533,7 @@ def main():
     target = pick_series_item(items)
     if target:
         print(f"応答対象の回: 「{target['title']}」")
+        save_latest(target)
     else:
         print("『シン・アメリカ・モノガタリ』の回はRSSに見つかりませんでした。")
 
