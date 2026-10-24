@@ -1514,62 +1514,73 @@ body:not([data-lang="ja"]) .c-form label{letter-spacing:.2em}
   });
 
 
-  /* ── noteの最新記事を自動表示 ──
-     noteのRSSを取得し、成功したときだけカードの題と日付・リンクを最新記事に差し替える。
-     取得できない場合は静的な表示のまま。 */
+
+
+
+  /* ── お知らせ：『シン・アメリカ・モノガタリ』最新回（題・日付・リンク・画像）を反映 ──
+     まず natory/latest.json（毎朝の自動実行が更新）を読む。
+     読めなければ note のRSSを外部サービス経由で試す。どちらも駄目なら既定の表示のまま。 */
   (function(){
-    var RSS = "https://note.com/michihari_natori/rss";
-    fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(RSS))
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        if(!data || data.status !== "ok" || !data.items || !data.items.length) return;
-        // 「シン・アメリカ・モノガタリ」を含む最新記事を優先、なければ最新記事
-        var item = null;
-        for(var i=0;i<data.items.length;i++){
-          var t = (data.items[i].title||"") + " " + ((data.items[i].categories||[]).join(" "));
-          if(t.indexOf("アメリカ") !== -1){ item = data.items[i]; break; }
-        }
-        if(!item) item = data.items[0];
-        var card = document.getElementById("press1-card");
-        var cap  = document.getElementById("press1-cap");
-        var dt   = document.getElementById("press1-date");
-        if(!card || !cap || !dt) return;
-        card.href = item.link;
-        cap.removeAttribute("data-i18n"); /* 言語切替で上書きされないように */
-        cap.textContent = "『シン・アメリカ・モノガタリ』最新回——「" + item.title + "」";
-        var d = new Date(item.pubDate.replace(" ", "T"));
-        if(!isNaN(d)){
-          var mm = ("0"+(d.getMonth()+1)).slice(-2), dd = ("0"+d.getDate()).slice(-2);
-          dt.textContent = d.getFullYear() + "." + mm + "." + dd;
-        }
-      })
-      .catch(function(){ /* 失敗時は静的表示のまま */ });
-  })();
+    var latest = null;
+    var SERIES = /\s*[｜|]\s*シン・アメリカ・モノガタリ\s*$/;
 
+    function lang(){ return document.body.dataset.lang || "ja"; }
+    function captionFor(title){
+      var t = (title || "").replace(SERIES, "");
+      var l = lang();
+      if(l === "en") return "Shin America Monogatari, latest installment — \u201C" + t + "\u201D";
+      if(l === "fr") return "Shin America Monogatari, dernier épisode — « " + t + " »";
+      return "『シン・アメリカ・モノガタリ』最新回——「" + t + "」";
+    }
+    function render(){
+      if(!latest) return;
+      var card = document.getElementById("press1-card");
+      var cap  = document.getElementById("press1-cap");
+      var dt   = document.getElementById("press1-date");
+      var img  = document.getElementById("press1-img");
+      if(card && latest.link) card.href = latest.link;
+      if(dt && latest.date)   dt.textContent = latest.date;
+      if(cap && latest.title){
+        cap.removeAttribute("data-i18n");           /* 言語切替で既定文に戻されないように */
+        cap.textContent = captionFor(latest.title);
+      }
+      if(img && latest.thumbnail && !img.dataset.swapped){
+        var probe = new Image();                    /* 読み込めた画像だけ差し替える */
+        probe.onload = function(){
+          img.src = latest.thumbnail;
+          img.classList.remove("fit");
+          img.dataset.swapped = "1";
+          img.alt = latest.title || "";
+        };
+        probe.src = latest.thumbnail;
+      }
+    }
+    function fromRss(){
+      var RSS = "https://note.com/michihari_natori/rss";
+      return fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(RSS))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if(!data || data.status !== "ok" || !data.items) throw 0;
+          var item = data.items.filter(function(i){
+            return /アメリカ/.test(i.title || "");
+          })[0];
+          if(!item) throw 0;
+          var d = new Date((item.pubDate || "").replace(" ", "T"));
+          var date = isNaN(d) ? "" : d.getFullYear() + "." +
+            ("0"+(d.getMonth()+1)).slice(-2) + "." + ("0"+d.getDate()).slice(-2);
+          return {title:item.title, link:item.link, date:date, thumbnail:item.thumbnail || ""};
+        });
+    }
 
-
-  /* ── お知らせ：『シン・アメリカ・モノガタリ』最新回の情報を反映 ── */
-  (function(){
     fetch("natory/latest.json",{cache:"no-store"})
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(d){
-        if(!d) return;
-        var card = document.getElementById("press1-card");
-        var img  = document.getElementById("press1-img");
-        var dt   = document.getElementById("press1-date");
-        if(card && d.link) card.href = d.link;
-        if(dt && d.date)   dt.textContent = d.date;
-        if(img && d.thumbnail){
-          var probe = new Image();               /* 読み込めた画像だけ差し替える */
-          probe.onload = function(){
-            img.src = d.thumbnail;
-            img.classList.remove("fit");
-            if(d.title) img.alt = d.title;
-          };
-          probe.src = d.thumbnail;
-        }
-      })
-      .catch(function(){ /* 取得できないあいだは既定の写真のまま */ });
+      .catch(fromRss)
+      .then(function(d){ if(d && d.title){ latest = d; render(); } })
+      .catch(function(){ /* 取得できないあいだは既定の表示のまま */ });
+
+    document.querySelectorAll(".lang-sw button").forEach(function(b){
+      b.addEventListener("click", function(){ setTimeout(render, 0); });
+    });
   })();
 
   /* ── Ⅲ 俳句：訪れるたびに一句を選ぶ（日英仏） ── */

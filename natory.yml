@@ -1,0 +1,66 @@
+# NATORY — 応答日記の自動生成（人間の介入なし）
+# 生成は無料。Secretsに GEMINI_API_KEY を登録すればGeminiを使い、
+# 未登録なら GitHub Models（GITHUB_TOKENのみ）で動く。
+# 毎朝 06:00 JST（前日21:00 UTC）に新しい回が出ていないか確認し、
+# 出ていればその朝だけ日記を書く。＝記事投稿の翌朝6時に応答が公開される。
+name: NATORY diary
+
+on:
+  schedule:
+    - cron: "0 21 * * *"     # 毎朝 JST 6:00 に点検
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  models: read        # GitHub Models（無料）を呼ぶための権限
+
+jobs:
+  write-diary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: 日記を書く
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 natory/generate.py
+
+      - name: 書いた日記を保存する
+        run: |
+          set +e
+          git config user.name  "NATORY"
+          git config user.email "natory@users.noreply.github.com"
+
+          # 日記（entries.json）と最新回の情報（latest.json）の両方を保存の対象にする
+          git add -A natory/
+
+          if git diff --cached --quiet; then
+            echo "新しい日記も最新回の更新もありません（保存するものなし）。"
+            exit 0
+          fi
+
+          git commit -m "NATORY: 日記と最新回の情報を更新"
+
+          # 他の更新が先に入っていた場合に備えて、いったん取り込んでから送る
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" >/dev/null 2>&1
+
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          PUSH_STATUS=$?
+
+          if [ $PUSH_STATUS -ne 0 ]; then
+            echo "──────────────────────────────────────────"
+            echo "日記は書けましたが、リポジトリに保存できませんでした。"
+            echo "多くの場合、書き込み権限の設定が原因です。"
+            echo "リポジトリの Settings → Actions → General →"
+            echo "「Workflow permissions」を"
+            echo "  「Read and write permissions」に変更して保存し、"
+            echo "もう一度 Run workflow を実行してください。"
+            echo "──────────────────────────────────────────"
+            exit 1
+          fi
+
+          echo "保存しました。"
